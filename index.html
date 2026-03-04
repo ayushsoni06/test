@@ -249,9 +249,17 @@
             get topology() { return document.getElementById('topology').value; },
         };
 
+        let dpr = 1;
+
         function resize() {
-            W = canvas.width = window.innerWidth;
-            H = canvas.height = window.innerHeight;
+            dpr = window.devicePixelRatio || 1;
+            W = window.innerWidth;
+            H = window.innerHeight;
+            canvas.width = Math.round(W * dpr);
+            canvas.height = Math.round(H * dpr);
+            canvas.style.width = W + 'px';
+            canvas.style.height = H + 'px';
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         }
 
         // Seeded random for reproducibility
@@ -276,7 +284,7 @@
                 this.radius = [2.5, 1.6, 1.0, 0.55][tier] || 0.55;
                 this.phase = rng() * Math.PI * 2;
                 this.speed = 0.2 + rng() * 0.5;
-                this.amplitude = 1 + rng() * 3;
+                this.amplitude = 0.4 + rng() * 0.8;
                 this.connections = 0;
                 this.energy = 0;
                 this.pulsePhase = rng() * Math.PI * 2;
@@ -510,7 +518,7 @@
             const hShift = edge.curveOffset * 18;
 
             ctx.strokeStyle = `hsla(${h + hShift}, ${s}%, ${l}%, ${alpha})`;
-            ctx.lineWidth = 0.25 + edge.strength * 0.55;
+            ctx.lineWidth = Math.round((0.5 + edge.strength * 0.5) * dpr) / dpr;
 
             const curv = params.curvature;
 
@@ -590,63 +598,54 @@
 
             const [nh, ns, nl] = PALETTE[node.colorIdx];
 
-            const nodeColor = `hsla(${nh}, ${ns}%, ${Math.min(nl + 15, 95)}%, ${alpha})`;
-            const nodeColorDim = `hsla(${nh}, ${ns}%, ${nl}%, ${alpha * 0.5})`;
+            // Snap to pixel grid for crispness
+            const nx = Math.round(node.x * dpr) / dpr;
+            const ny = Math.round(node.y * dpr) / dpr;
 
-            // Glow for hub nodes or mouse proximity
-            if (node.tier === 0 || mouseInfluence > 0.3) {
-                const glowR = r * (5 + mouseInfluence * 4);
-                const gradient = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, glowR);
-                gradient.addColorStop(0, `hsla(${nh}, ${ns}%, ${nl}%, ${alpha * 0.3})`);
-                gradient.addColorStop(1, `hsla(${nh}, ${ns}%, ${nl}%, 0)`);
-                ctx.beginPath();
-                ctx.arc(node.x, node.y, glowR, 0, Math.PI * 2);
-                ctx.fillStyle = gradient;
-                ctx.fill();
-            }
+            // Flat colour — no gradients
+            const nodeColor = `hsla(${nh}, ${ns}%, ${Math.min(nl + 12, 92)}%, ${alpha})`;
 
-            // Node body — shape from design vocabulary
+            // Node body — shape from design vocabulary, flat filled
             if (node.shape === 'square') {
-                // Filled square
-                const s = r * 2.0;
+                const s = Math.max(1, Math.round(r * 1.8 * dpr) / dpr);
                 ctx.beginPath();
-                ctx.rect(node.x - s, node.y - s, s * 2, s * 2);
+                ctx.rect(nx - s, ny - s, s * 2, s * 2);
                 ctx.fillStyle = nodeColor;
                 ctx.fill();
             } else if (node.shape === 'ring') {
-                // Outlined circle (hollow)
-                const rr = r * 1.5;
+                const rr = Math.max(0.8, r * 1.6);
                 ctx.beginPath();
-                ctx.arc(node.x, node.y, rr, 0, Math.PI * 2);
+                ctx.arc(nx, ny, rr, 0, Math.PI * 2);
                 ctx.strokeStyle = nodeColor;
-                ctx.lineWidth = 0.8;
+                ctx.lineWidth = Math.max(0.5, 0.7);
                 ctx.stroke();
-                // Tiny filled center dot
+                // Center dot
                 ctx.beginPath();
-                ctx.arc(node.x, node.y, r * 0.4, 0, Math.PI * 2);
+                ctx.arc(nx, ny, Math.max(0.4, r * 0.45), 0, Math.PI * 2);
                 ctx.fillStyle = nodeColor;
                 ctx.fill();
             } else {
-                // Default: filled circle
                 ctx.beginPath();
-                ctx.arc(node.x, node.y, r, 0, Math.PI * 2);
+                ctx.arc(nx, ny, Math.max(0.6, r), 0, Math.PI * 2);
                 ctx.fillStyle = nodeColor;
                 ctx.fill();
+            }
+
+            // Hover highlight: thin stroke ring, no blur
+            if (mouseInfluence > 0.5) {
+                ctx.beginPath();
+                ctx.arc(nx, ny, r + 3, 0, Math.PI * 2);
+                ctx.strokeStyle = `hsla(${nh}, ${ns}%, 95%, ${mouseInfluence * 0.5})`;
+                ctx.lineWidth = 0.5;
+                ctx.stroke();
             }
         }
 
         function draw() {
             ctx.clearRect(0, 0, W, H);
 
-            // Background
-            ctx.fillStyle = '#080810';
-            ctx.fillRect(0, 0, W, H);
-
-            // Subtle radial gradient background
-            const bgGrad = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.max(W, H) * 0.65);
-            bgGrad.addColorStop(0, 'rgba(18, 14, 32, 0.6)');
-            bgGrad.addColorStop(1, 'rgba(8, 8, 16, 0)');
-            ctx.fillStyle = bgGrad;
+            // Flat background — no blur or gradient softness
+            ctx.fillStyle = '#08080f';
             ctx.fillRect(0, 0, W, H);
 
             const t = time;

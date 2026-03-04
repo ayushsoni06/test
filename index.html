@@ -281,6 +281,9 @@
                 this.energy = 0;
                 this.pulsePhase = rng() * Math.PI * 2;
                 this.colorIdx = Math.floor(rng() * PALETTE.length);
+                // Shape vocabulary from design: filled circle, filled square, outlined ring
+                const sr = rng();
+                this.shape = sr > 0.82 ? 'square' : sr > 0.67 ? 'ring' : 'circle';
             }
         }
 
@@ -587,11 +590,14 @@
 
             const [nh, ns, nl] = PALETTE[node.colorIdx];
 
-            // Outer glow for hub nodes or mouse proximity
+            const nodeColor = `hsla(${nh}, ${ns}%, ${Math.min(nl + 15, 95)}%, ${alpha})`;
+            const nodeColorDim = `hsla(${nh}, ${ns}%, ${nl}%, ${alpha * 0.5})`;
+
+            // Glow for hub nodes or mouse proximity
             if (node.tier === 0 || mouseInfluence > 0.3) {
-                const glowR = r * (4 + mouseInfluence * 3);
-                const gradient = ctx.createRadialGradient(node.x, node.y, r * 0.5, node.x, node.y, glowR);
-                gradient.addColorStop(0, `hsla(${nh}, ${ns}%, ${nl}%, ${alpha * 0.35})`);
+                const glowR = r * (5 + mouseInfluence * 4);
+                const gradient = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, glowR);
+                gradient.addColorStop(0, `hsla(${nh}, ${ns}%, ${nl}%, ${alpha * 0.3})`);
                 gradient.addColorStop(1, `hsla(${nh}, ${ns}%, ${nl}%, 0)`);
                 ctx.beginPath();
                 ctx.arc(node.x, node.y, glowR, 0, Math.PI * 2);
@@ -599,19 +605,33 @@
                 ctx.fill();
             }
 
-            // Node body
-            ctx.beginPath();
-            ctx.arc(node.x, node.y, r, 0, Math.PI * 2);
-            ctx.fillStyle = `hsla(${nh}, ${ns}%, ${Math.min(nl + 15, 95)}%, ${alpha})`;
-            ctx.fill();
-
-            // Ring for primary and hub nodes
-            if (node.tier <= 1) {
+            // Node body — shape from design vocabulary
+            if (node.shape === 'square') {
+                // Filled square
+                const s = r * 2.0;
                 ctx.beginPath();
-                ctx.arc(node.x, node.y, r + 2.5 + mouseInfluence * 2, 0, Math.PI * 2);
-                ctx.strokeStyle = `hsla(${nh}, ${ns}%, ${nl}%, ${alpha * 0.4})`;
-                ctx.lineWidth = 0.5;
+                ctx.rect(node.x - s, node.y - s, s * 2, s * 2);
+                ctx.fillStyle = nodeColor;
+                ctx.fill();
+            } else if (node.shape === 'ring') {
+                // Outlined circle (hollow)
+                const rr = r * 1.5;
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, rr, 0, Math.PI * 2);
+                ctx.strokeStyle = nodeColor;
+                ctx.lineWidth = 0.8;
                 ctx.stroke();
+                // Tiny filled center dot
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, r * 0.4, 0, Math.PI * 2);
+                ctx.fillStyle = nodeColor;
+                ctx.fill();
+            } else {
+                // Default: filled circle
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, r, 0, Math.PI * 2);
+                ctx.fillStyle = nodeColor;
+                ctx.fill();
             }
         }
 

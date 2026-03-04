@@ -228,6 +228,17 @@
         let dragNode = null;
         let hoveredNode = null;
 
+        // Vibrant data viz palette [hue, sat%, light%]
+        const PALETTE = [
+            [52,  100, 62],   // golden yellow
+            [328,  95, 65],   // hot pink
+            [22,  100, 60],   // orange
+            [198,  95, 62],   // sky blue
+            [168,  80, 52],   // teal
+            [270,  85, 70],   // violet
+            [0,    95, 62],   // coral red
+        ];
+
         // Parameters
         const params = {
             get nodeCount() { return parseInt(document.getElementById('nodeCount').value); },
@@ -262,13 +273,14 @@
                 this.baseX = x;
                 this.baseY = y;
                 this.tier = tier; // 0=hub, 1=primary, 2=secondary, 3=leaf
-                this.radius = [6, 4, 2.5, 1.5][tier] || 1.5;
+                this.radius = [2.5, 1.6, 1.0, 0.55][tier] || 0.55;
                 this.phase = rng() * Math.PI * 2;
                 this.speed = 0.2 + rng() * 0.5;
                 this.amplitude = 1 + rng() * 3;
                 this.connections = 0;
                 this.energy = 0;
                 this.pulsePhase = rng() * Math.PI * 2;
+                this.colorIdx = Math.floor(rng() * PALETTE.length);
             }
         }
 
@@ -488,15 +500,14 @@
                 ? 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(t * pulse * 3 + edge.pulseOffset))
                 : 1;
 
-            const alpha = edge.strength * 0.35 * pulseFactor;
+            const alpha = edge.strength * 0.55 * pulseFactor;
 
-            // Color based on connection type
-            const hue = 0;
-            const sat = 0;
-            const light = 50 + edge.strength * 30;
+            // Color from source node's palette entry, slight hue shift per edge
+            const [h, s, l] = PALETTE[nodes[edge.a].colorIdx];
+            const hShift = edge.curveOffset * 18;
 
-            ctx.strokeStyle = `hsla(${hue}, ${sat}%, ${light}%, ${alpha})`;
-            ctx.lineWidth = 0.5 + edge.strength * 1;
+            ctx.strokeStyle = `hsla(${h + hShift}, ${s}%, ${l}%, ${alpha})`;
+            ctx.lineWidth = 0.25 + edge.strength * 0.55;
 
             const curv = params.curvature;
 
@@ -544,7 +555,7 @@
 
                 ctx.beginPath();
                 ctx.arc(px, py, pulseR, 0, Math.PI * 2);
-                ctx.fillStyle = `hsla(0, 0%, 90%, ${pulseAlpha})`;
+                ctx.fillStyle = `hsla(${h + hShift}, ${s}%, ${Math.min(l + 25, 95)}%, ${pulseAlpha})`;
                 ctx.fill();
             }
         }
@@ -574,12 +585,14 @@
             const alpha = baseAlpha * pulseFactor + mouseInfluence * 0.3;
             const r = node.radius * (1 + mouseInfluence * 0.8) * (0.9 + node.energy * 0.2);
 
+            const [nh, ns, nl] = PALETTE[node.colorIdx];
+
             // Outer glow for hub nodes or mouse proximity
             if (node.tier === 0 || mouseInfluence > 0.3) {
-                const glowR = r * (3 + mouseInfluence * 2);
-                const gradient = ctx.createRadialGradient(node.x, node.y, r, node.x, node.y, glowR);
-                gradient.addColorStop(0, `rgba(255, 255, 255, ${alpha * 0.15})`);
-                gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                const glowR = r * (4 + mouseInfluence * 3);
+                const gradient = ctx.createRadialGradient(node.x, node.y, r * 0.5, node.x, node.y, glowR);
+                gradient.addColorStop(0, `hsla(${nh}, ${ns}%, ${nl}%, ${alpha * 0.35})`);
+                gradient.addColorStop(1, `hsla(${nh}, ${ns}%, ${nl}%, 0)`);
                 ctx.beginPath();
                 ctx.arc(node.x, node.y, glowR, 0, Math.PI * 2);
                 ctx.fillStyle = gradient;
@@ -589,14 +602,14 @@
             // Node body
             ctx.beginPath();
             ctx.arc(node.x, node.y, r, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+            ctx.fillStyle = `hsla(${nh}, ${ns}%, ${Math.min(nl + 15, 95)}%, ${alpha})`;
             ctx.fill();
 
             // Ring for primary and hub nodes
             if (node.tier <= 1) {
                 ctx.beginPath();
-                ctx.arc(node.x, node.y, r + 3 + mouseInfluence * 2, 0, Math.PI * 2);
-                ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.25})`;
+                ctx.arc(node.x, node.y, r + 2.5 + mouseInfluence * 2, 0, Math.PI * 2);
+                ctx.strokeStyle = `hsla(${nh}, ${ns}%, ${nl}%, ${alpha * 0.4})`;
                 ctx.lineWidth = 0.5;
                 ctx.stroke();
             }
@@ -606,13 +619,13 @@
             ctx.clearRect(0, 0, W, H);
 
             // Background
-            ctx.fillStyle = '#0a0a0a';
+            ctx.fillStyle = '#080810';
             ctx.fillRect(0, 0, W, H);
 
             // Subtle radial gradient background
-            const bgGrad = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.max(W, H) * 0.6);
-            bgGrad.addColorStop(0, 'rgba(20, 20, 25, 0.5)');
-            bgGrad.addColorStop(1, 'rgba(10, 10, 10, 0)');
+            const bgGrad = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.max(W, H) * 0.65);
+            bgGrad.addColorStop(0, 'rgba(18, 14, 32, 0.6)');
+            bgGrad.addColorStop(1, 'rgba(8, 8, 16, 0)');
             ctx.fillStyle = bgGrad;
             ctx.fillRect(0, 0, W, H);
 
@@ -635,11 +648,12 @@
                     const dy = node.y - mouse.y;
                     const dist = Math.sqrt(dx * dx + dy * dy);
                     if (dist < 150) {
-                        const alpha = (1 - dist / 150) * 0.15;
+                        const alpha = (1 - dist / 150) * 0.2;
+                        const [mh, ms, ml] = PALETTE[node.colorIdx];
                         ctx.beginPath();
                         ctx.moveTo(mouse.x, mouse.y);
                         ctx.lineTo(node.x, node.y);
-                        ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+                        ctx.strokeStyle = `hsla(${mh}, ${ms}%, ${ml}%, ${alpha})`;
                         ctx.lineWidth = 0.5;
                         ctx.stroke();
                     }

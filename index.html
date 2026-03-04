@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TMMC Pattern Visualizer</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #0a0a0a;
+            overflow: hidden;
+            font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+            color: #e0e0e0;
+            cursor: crosshair;
+        }
+
+        canvas {
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+        }
+
+        #controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 260px;
+            background: rgba(10, 10, 10, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 20px;
+            backdrop-filter: blur(20px);
+        }
+
+        #controls h2 {
+            font-size: 10px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.4);
+            margin-bottom: 4px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .control-group label {
+            font-size: 10px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.35);
+        }
+
+        .control-group input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.1);
+            outline: none;
+            border-radius: 1px;
+        }
+
+        .control-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.6);
+            cursor: pointer;
+        }
+
+        .control-group input[type="range"]::-moz-range-thumb {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.6);
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        button {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.5);
+            padding: 8px 12px;
+            font-size: 9px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: pointer;
+            border-radius: 4px;
+            font-family: inherit;
+            transition: all 0.2s;
+            flex: 1;
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.8);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        button.active {
+            background: rgba(255, 255, 255, 0.12);
+            color: rgba(255, 255, 255, 0.9);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        #info {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 10;
+            font-size: 10px;
+            letter-spacing: 1px;
+            color: rgba(255, 255, 255, 0.2);
+        }
+
+        #info span {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        select {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.6);
+            padding: 6px 8px;
+            font-size: 10px;
+            font-family: inherit;
+            border-radius: 4px;
+            cursor: pointer;
+            outline: none;
+        }
+
+        select option {
+            background: #1a1a1a;
+            color: #e0e0e0;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+
+    <div id="controls">
+        <h2>Pattern System</h2>
+
+        <div class="control-group">
+            <label>Topology</label>
+            <select id="topology">
+                <option value="radial">Radial</option>
+                <option value="grid">Grid</option>
+                <option value="cluster">Cluster</option>
+                <option value="spiral">Spiral</option>
+                <option value="organic">Organic</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label>Node Count — <span id="nodeCountVal">120</span></label>
+            <input type="range" id="nodeCount" min="20" max="500" value="120">
+        </div>
+
+        <div class="control-group">
+            <label>Connection Density — <span id="densityVal">0.4</span></label>
+            <input type="range" id="density" min="0" max="100" value="40">
+        </div>
+
+        <div class="control-group">
+            <label>Complexity — <span id="complexityVal">0.6</span></label>
+            <input type="range" id="complexity" min="0" max="100" value="60">
+        </div>
+
+        <div class="control-group">
+            <label>Pulse Speed — <span id="pulseVal">0.5</span></label>
+            <input type="range" id="pulse" min="0" max="100" value="50">
+        </div>
+
+        <div class="control-group">
+            <label>Curvature — <span id="curvatureVal">0.5</span></label>
+            <input type="range" id="curvature" min="0" max="100" value="50">
+        </div>
+
+        <div class="btn-row">
+            <button id="regenerate">Regenerate</button>
+            <button id="toggleMotion" class="active">Motion On</button>
+        </div>
+
+        <div class="btn-row">
+            <button id="exportBtn">Export PNG</button>
+            <button id="exportSvgBtn">Export SVG</button>
+        </div>
+    </div>
+
+    <div id="info">
+        <span id="fps">0</span> FPS &nbsp;|&nbsp;
+        <span id="nodeInfo">0</span> NODES &nbsp;|&nbsp;
+        <span id="edgeInfo">0</span> EDGES
+    </div>
+
+    <script>
+    (() => {
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let W, H;
+        let nodes = [];
+        let edges = [];
+        let motionEnabled = true;
+        let mouse = { x: -1000, y: -1000 };
+        let time = 0;
+        let frameCount = 0;
+        let lastFpsUpdate = 0;
+        let currentFps = 0;
+        let dragNode = null;
+        let hoveredNode = null;
+
+        // Parameters
+        const params = {
+            get nodeCount() { return parseInt(document.getElementById('nodeCount').value); },
+            get density() { return parseInt(document.getElementById('density').value) / 100; },
+            get complexity() { return parseInt(document.getElementById('complexity').value) / 100; },
+            get pulse() { return parseInt(document.getElementById('pulse').value) / 100; },
+            get curvature() { return parseInt(document.getElementById('curvature').value) / 100; },
+            get topology() { return document.getElementById('topology').value; },
+        };
+
+        function resize() {
+            W = canvas.width = window.innerWidth;
+            H = canvas.height = window.innerHeight;
+        }
+
+        // Seeded random for reproducibility
+        function seededRandom(seed) {
+            let s = seed;
+            return () => {
+                s = (s * 16807 + 0) % 2147483647;
+                return s / 2147483647;
+            };
+        }
+
+        let rng = seededRandom(Date.now());
+
+        // Node class
+        class Node {
+            constructor(x, y, tier = 0) {
+                this.x = x;
+                this.y = y;
+                this.baseX = x;
+                this.baseY = y;
+                this.tier = tier; // 0=hub, 1=primary, 2=secondary, 3=leaf
+                this.radius = [6, 4, 2.5, 1.5][tier] || 1.5;
+                this.phase = rng() * Math.PI * 2;
+                this.speed = 0.2 + rng() * 0.5;
+                this.amplitude = 1 + rng() * 3;
+                this.connections = 0;
+                this.energy = 0;
+                this.pulsePhase = rng() * Math.PI * 2;
+            }
+        }
+
+        // Edge class
+        class Edge {
+            constructor(a, b, strength = 1) {
+                this.a = a;
+                this.b = b;
+                this.strength = strength;
+                this.pulseOffset = rng() * Math.PI * 2;
+                this.curveOffset = (rng() - 0.5) * 2;
+                this.type = rng() > 0.7 ? 'bezier' : (rng() > 0.5 ? 'arc' : 'line');
+            }
+        }
+
+        function generateRadial(count) {
+            const cx = W / 2, cy = H / 2;
+            const hubCount = Math.max(1, Math.floor(count * 0.03));
+            const primaryCount = Math.floor(count * 0.15);
+            const secondaryCount = Math.floor(count * 0.35);
+            const leafCount = count - hubCount - primaryCount - secondaryCount;
+
+            // Hubs near center
+            for (let i = 0; i < hubCount; i++) {
+                const angle = (i / hubCount) * Math.PI * 2 + rng() * 0.5;
+                const r = 20 + rng() * 60;
+                nodes.push(new Node(cx + Math.cos(angle) * r, cy + Math.sin(angle) * r, 0));
+            }
+
+            // Primary ring
+            for (let i = 0; i < primaryCount; i++) {
+                const angle = (i / primaryCount) * Math.PI * 2 + rng() * 0.3;
+                const r = 80 + rng() * 120;
+                nodes.push(new Node(cx + Math.cos(angle) * r, cy + Math.sin(angle) * r, 1));
+            }
+
+            // Secondary ring
+            for (let i = 0; i < secondaryCount; i++) {
+                const angle = (i / secondaryCount) * Math.PI * 2 + rng() * 0.4;
+                const r = 180 + rng() * 180;
+                nodes.push(new Node(cx + Math.cos(angle) * r, cy + Math.sin(angle) * r, 2));
+            }
+
+            // Leaf nodes
+            for (let i = 0; i < leafCount; i++) {
+                const angle = rng() * Math.PI * 2;
+                const r = 100 + rng() * Math.min(W, H) * 0.4;
+                nodes.push(new Node(cx + Math.cos(angle) * r, cy + Math.sin(angle) * r, 3));
+            }
+        }
+
+        function generateGrid(count) {
+            const cols = Math.ceil(Math.sqrt(count * (W / H)));
+            const rows = Math.ceil(count / cols);
+            const spacingX = W / (cols + 1);
+            const spacingY = H / (rows + 1);
+            let idx = 0;
+
+            for (let r = 0; r < rows && idx < count; r++) {
+                for (let c = 0; c < cols && idx < count; c++) {
+                    const jitter = 20 * params.complexity;
+                    const x = spacingX * (c + 1) + (rng() - 0.5) * jitter;
+                    const y = spacingY * (r + 1) + (rng() - 0.5) * jitter;
+                    const tier = (r + c) % 4 === 0 ? 0 : (r + c) % 3 === 0 ? 1 : (r + c) % 2 === 0 ? 2 : 3;
+                    nodes.push(new Node(x, y, tier));
+                    idx++;
+                }
+            }
+        }
+
+        function generateCluster(count) {
+            const clusterCount = 3 + Math.floor(params.complexity * 5);
+            const centers = [];
+
+            for (let i = 0; i < clusterCount; i++) {
+                centers.push({
+                    x: W * 0.15 + rng() * W * 0.7,
+                    y: H * 0.15 + rng() * H * 0.7,
+                    size: 40 + rng() * 150
+                });
+            }
+
+            // Hub at each cluster center
+            centers.forEach(c => {
+                nodes.push(new Node(c.x, c.y, 0));
+            });
+
+            const remaining = count - clusterCount;
+            for (let i = 0; i < remaining; i++) {
+                const cluster = centers[Math.floor(rng() * clusterCount)];
+                const angle = rng() * Math.PI * 2;
+                const r = rng() * cluster.size;
+                const tier = r < cluster.size * 0.3 ? 1 : r < cluster.size * 0.6 ? 2 : 3;
+                nodes.push(new Node(
+                    cluster.x + Math.cos(angle) * r,
+                    cluster.y + Math.sin(angle) * r,
+                    tier
+                ));
+            }
+        }
+
+        function generateSpiral(count) {
+            const cx = W / 2, cy = H / 2;
+            const arms = 2 + Math.floor(params.complexity * 4);
+            const maxR = Math.min(W, H) * 0.4;
+
+            for (let i = 0; i < count; i++) {
+                const arm = i % arms;
+                const t = i / count;
+                const angle = arm * (Math.PI * 2 / arms) + t * Math.PI * 4;
+                const r = t * maxR + (rng() - 0.5) * 30;
+                const tier = t < 0.1 ? 0 : t < 0.3 ? 1 : t < 0.6 ? 2 : 3;
+                nodes.push(new Node(
+                    cx + Math.cos(angle) * r,
+                    cy + Math.sin(angle) * r,
+                    tier
+                ));
+            }
+        }
+
+        function generateOrganic(count) {
+            const cx = W / 2, cy = H / 2;
+
+            // Start with a few seed nodes
+            nodes.push(new Node(cx, cy, 0));
+
+            for (let i = 1; i < count; i++) {
+                const parent = nodes[Math.floor(rng() * nodes.length)];
+                const angle = rng() * Math.PI * 2;
+                const dist = 20 + rng() * 80;
+                const tier = Math.min(3, parent.tier + (rng() > 0.3 ? 1 : 0));
+                const x = Math.max(50, Math.min(W - 50, parent.x + Math.cos(angle) * dist));
+                const y = Math.max(50, Math.min(H - 50, parent.y + Math.sin(angle) * dist));
+                nodes.push(new Node(x, y, tier));
+            }
+        }
+
+        function generateEdges() {
+            edges = [];
+            const maxDist = 150 + params.density * 250;
+            const maxConnections = 2 + Math.floor(params.density * 8 + params.complexity * 6);
+
+            for (let i = 0; i < nodes.length; i++) {
+                const a = nodes[i];
+                const candidates = [];
+
+                for (let j = 0; j < nodes.length; j++) {
+                    if (i === j) continue;
+                    const b = nodes[j];
+                    const dx = a.x - b.x;
+                    const dy = a.y - b.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < maxDist) {
+                        // Prefer connecting different tiers
+                        const tierBonus = Math.abs(a.tier - b.tier) * 0.3;
+                        candidates.push({ idx: j, dist, score: 1 / dist + tierBonus });
+                    }
+                }
+
+                // Sort by score and connect top candidates
+                candidates.sort((a, b) => b.score - a.score);
+                const connectCount = Math.min(candidates.length,
+                    Math.max(1, Math.floor(maxConnections * (1 - a.tier * 0.15))));
+
+                for (let k = 0; k < connectCount; k++) {
+                    const c = candidates[k];
+                    // Avoid duplicate edges
+                    const exists = edges.some(e =>
+                        (e.a === i && e.b === c.idx) || (e.a === c.idx && e.b === i));
+                    if (!exists) {
+                        const strength = 1 - (c.dist / maxDist);
+                        edges.push(new Edge(i, c.idx, strength));
+                        a.connections++;
+                        nodes[c.idx].connections++;
+                    }
+                }
+            }
+
+            // Add some long-range connections for complexity
+            const longRange = Math.floor(nodes.length * params.complexity * 0.1);
+            for (let i = 0; i < longRange; i++) {
+                const a = Math.floor(rng() * nodes.length);
+                const b = Math.floor(rng() * nodes.length);
+                if (a !== b) {
+                    edges.push(new Edge(a, b, 0.15 + rng() * 0.2));
+                }
+            }
+        }
+
+        function generate() {
+            nodes = [];
+            edges = [];
+            rng = seededRandom(Date.now());
+
+            switch (params.topology) {
+                case 'radial': generateRadial(params.nodeCount); break;
+                case 'grid': generateGrid(params.nodeCount); break;
+                case 'cluster': generateCluster(params.nodeCount); break;
+                case 'spiral': generateSpiral(params.nodeCount); break;
+                case 'organic': generateOrganic(params.nodeCount); break;
+            }
+
+            generateEdges();
+
+            document.getElementById('nodeInfo').textContent = nodes.length;
+            document.getElementById('edgeInfo').textContent = edges.length;
+        }
+
+        function drawEdge(edge, t) {
+            const a = nodes[edge.a];
+            const b = nodes[edge.b];
+            if (!a || !b) return;
+
+            const pulse = params.pulse;
+            const pulseFactor = pulse > 0
+                ? 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(t * pulse * 3 + edge.pulseOffset))
+                : 1;
+
+            const alpha = edge.strength * 0.35 * pulseFactor;
+
+            // Color based on connection type
+            const hue = 0;
+            const sat = 0;
+            const light = 50 + edge.strength * 30;
+
+            ctx.strokeStyle = `hsla(${hue}, ${sat}%, ${light}%, ${alpha})`;
+            ctx.lineWidth = 0.5 + edge.strength * 1;
+
+            const curv = params.curvature;
+
+            ctx.beginPath();
+            if (edge.type === 'bezier' && curv > 0.05) {
+                const mx = (a.x + b.x) / 2;
+                const my = (a.y + b.y) / 2;
+                const dx = b.x - a.x;
+                const dy = b.y - a.y;
+                const offset = edge.curveOffset * curv * 80;
+                const cpx = mx - dy * 0.3 * curv + Math.sin(t * 0.5 + edge.pulseOffset) * offset * 0.1;
+                const cpy = my + dx * 0.3 * curv + Math.cos(t * 0.5 + edge.pulseOffset) * offset * 0.1;
+
+                ctx.moveTo(a.x, a.y);
+                ctx.quadraticCurveTo(cpx, cpy, b.x, b.y);
+            } else if (edge.type === 'arc' && curv > 0.05) {
+                const mx = (a.x + b.x) / 2;
+                const my = (a.y + b.y) / 2;
+                const dx = b.x - a.x;
+                const dy = b.y - a.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                const offset = edge.curveOffset * curv * 60;
+
+                const cp1x = a.x + dx * 0.25 - dy * 0.2 * curv + offset * 0.3;
+                const cp1y = a.y + dy * 0.25 + dx * 0.2 * curv + offset * 0.3;
+                const cp2x = a.x + dx * 0.75 - dy * 0.15 * curv - offset * 0.2;
+                const cp2y = a.y + dy * 0.75 + dx * 0.15 * curv - offset * 0.2;
+
+                ctx.moveTo(a.x, a.y);
+                ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, b.x, b.y);
+            } else {
+                ctx.moveTo(a.x, a.y);
+                ctx.lineTo(b.x, b.y);
+            }
+            ctx.stroke();
+
+            // Draw pulse traveling along edge
+            if (pulse > 0.1 && edge.strength > 0.3) {
+                const pt = (t * pulse * 0.8 + edge.pulseOffset) % (Math.PI * 2);
+                const tPos = (Math.sin(pt) + 1) / 2;
+                const px = a.x + (b.x - a.x) * tPos;
+                const py = a.y + (b.y - a.y) * tPos;
+                const pulseR = 1.5 * edge.strength;
+                const pulseAlpha = alpha * 2;
+
+                ctx.beginPath();
+                ctx.arc(px, py, pulseR, 0, Math.PI * 2);
+                ctx.fillStyle = `hsla(0, 0%, 90%, ${pulseAlpha})`;
+                ctx.fill();
+            }
+        }
+
+        function drawNode(node, t) {
+            const pulse = params.pulse;
+
+            // Mouse proximity glow
+            const dx = node.x - mouse.x;
+            const dy = node.y - mouse.y;
+            const mouseDist = Math.sqrt(dx * dx + dy * dy);
+            const mouseInfluence = Math.max(0, 1 - mouseDist / 200);
+
+            // Node animation
+            if (motionEnabled && node !== dragNode) {
+                node.x = node.baseX + Math.sin(t * node.speed + node.phase) * node.amplitude;
+                node.y = node.baseY + Math.cos(t * node.speed * 0.7 + node.phase) * node.amplitude * 0.8;
+            }
+
+            // Energy from connections
+            node.energy = node.connections / 10 + mouseInfluence * 0.5;
+            const pulseFactor = pulse > 0
+                ? 0.7 + 0.3 * Math.sin(t * pulse * 2 + node.pulsePhase)
+                : 1;
+
+            const baseAlpha = [0.9, 0.7, 0.5, 0.3][node.tier];
+            const alpha = baseAlpha * pulseFactor + mouseInfluence * 0.3;
+            const r = node.radius * (1 + mouseInfluence * 0.8) * (0.9 + node.energy * 0.2);
+
+            // Outer glow for hub nodes or mouse proximity
+            if (node.tier === 0 || mouseInfluence > 0.3) {
+                const glowR = r * (3 + mouseInfluence * 2);
+                const gradient = ctx.createRadialGradient(node.x, node.y, r, node.x, node.y, glowR);
+                gradient.addColorStop(0, `rgba(255, 255, 255, ${alpha * 0.15})`);
+                gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, glowR, 0, Math.PI * 2);
+                ctx.fillStyle = gradient;
+                ctx.fill();
+            }
+
+            // Node body
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, r, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+            ctx.fill();
+
+            // Ring for primary and hub nodes
+            if (node.tier <= 1) {
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, r + 3 + mouseInfluence * 2, 0, Math.PI * 2);
+                ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.25})`;
+                ctx.lineWidth = 0.5;
+                ctx.stroke();
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, W, H);
+
+            // Background
+            ctx.fillStyle = '#0a0a0a';
+            ctx.fillRect(0, 0, W, H);
+
+            // Subtle radial gradient background
+            const bgGrad = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.max(W, H) * 0.6);
+            bgGrad.addColorStop(0, 'rgba(20, 20, 25, 0.5)');
+            bgGrad.addColorStop(1, 'rgba(10, 10, 10, 0)');
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(0, 0, W, H);
+
+            const t = time;
+
+            // Draw edges
+            for (const edge of edges) {
+                drawEdge(edge, t);
+            }
+
+            // Draw nodes
+            for (const node of nodes) {
+                drawNode(node, t);
+            }
+
+            // Mouse interaction lines
+            if (mouse.x > 0 && mouse.y > 0 && !dragNode) {
+                for (const node of nodes) {
+                    const dx = node.x - mouse.x;
+                    const dy = node.y - mouse.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < 150) {
+                        const alpha = (1 - dist / 150) * 0.15;
+                        ctx.beginPath();
+                        ctx.moveTo(mouse.x, mouse.y);
+                        ctx.lineTo(node.x, node.y);
+                        ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+                        ctx.lineWidth = 0.5;
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            // FPS
+            frameCount++;
+            const now = performance.now();
+            if (now - lastFpsUpdate > 500) {
+                currentFps = Math.round(frameCount / ((now - lastFpsUpdate) / 1000));
+                frameCount = 0;
+                lastFpsUpdate = now;
+                document.getElementById('fps').textContent = currentFps;
+            }
+
+            if (motionEnabled) {
+                time += 0.016;
+            }
+
+            requestAnimationFrame(draw);
+        }
+
+        // Event handlers
+        canvas.addEventListener('mousemove', (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+
+            if (dragNode) {
+                dragNode.x = e.clientX;
+                dragNode.y = e.clientY;
+                dragNode.baseX = e.clientX;
+                dragNode.baseY = e.clientY;
+            }
+
+            // Find hovered node
+            hoveredNode = null;
+            for (const node of nodes) {
+                const dx = node.x - e.clientX;
+                const dy = node.y - e.clientY;
+                if (Math.sqrt(dx * dx + dy * dy) < node.radius + 8) {
+                    hoveredNode = node;
+                    break;
+                }
+            }
+            canvas.style.cursor = hoveredNode ? 'grab' : 'crosshair';
+        });
+
+        canvas.addEventListener('mousedown', (e) => {
+            if (hoveredNode) {
+                dragNode = hoveredNode;
+                canvas.style.cursor = 'grabbing';
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            dragNode = null;
+            canvas.style.cursor = hoveredNode ? 'grab' : 'crosshair';
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            mouse.x = -1000;
+            mouse.y = -1000;
+            dragNode = null;
+        });
+
+        // Controls
+        document.getElementById('regenerate').addEventListener('click', generate);
+
+        document.getElementById('toggleMotion').addEventListener('click', function() {
+            motionEnabled = !motionEnabled;
+            this.textContent = motionEnabled ? 'Motion On' : 'Motion Off';
+            this.classList.toggle('active', motionEnabled);
+        });
+
+        document.getElementById('topology').addEventListener('change', generate);
+
+        // Slider value displays
+        ['nodeCount', 'density', 'complexity', 'pulse', 'curvature'].forEach(id => {
+            const el = document.getElementById(id);
+            const valEl = document.getElementById(id + 'Val');
+            el.addEventListener('input', () => {
+                if (id === 'nodeCount') {
+                    valEl.textContent = el.value;
+                } else {
+                    valEl.textContent = (parseInt(el.value) / 100).toFixed(1);
+                }
+            });
+            el.addEventListener('change', generate);
+        });
+
+        // Export PNG
+        document.getElementById('exportBtn').addEventListener('click', () => {
+            const link = document.createElement('a');
+            link.download = `tmmc-pattern-${Date.now()}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        });
+
+        // Export SVG
+        document.getElementById('exportSvgBtn').addEventListener('click', () => {
+            let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`;
+            svg += `<rect width="${W}" height="${H}" fill="#0a0a0a"/>`;
+
+            // Edges
+            for (const edge of edges) {
+                const a = nodes[edge.a];
+                const b = nodes[edge.b];
+                if (!a || !b) continue;
+                const alpha = edge.strength * 0.35;
+                const lw = 0.5 + edge.strength * 1;
+                const curv = params.curvature;
+
+                if (edge.type === 'bezier' && curv > 0.05) {
+                    const mx = (a.x + b.x) / 2;
+                    const my = (a.y + b.y) / 2;
+                    const dx = b.x - a.x;
+                    const dy = b.y - a.y;
+                    const cpx = mx - dy * 0.3 * curv;
+                    const cpy = my + dx * 0.3 * curv;
+                    svg += `<path d="M${a.x},${a.y} Q${cpx},${cpy} ${b.x},${b.y}" fill="none" stroke="rgba(255,255,255,${alpha})" stroke-width="${lw}"/>`;
+                } else {
+                    svg += `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="rgba(255,255,255,${alpha})" stroke-width="${lw}"/>`;
+                }
+            }
+
+            // Nodes
+            for (const node of nodes) {
+                const alpha = [0.9, 0.7, 0.5, 0.3][node.tier];
+                svg += `<circle cx="${node.x}" cy="${node.y}" r="${node.radius}" fill="rgba(255,255,255,${alpha})"/>`;
+            }
+
+            svg += '</svg>';
+
+            const blob = new Blob([svg], { type: 'image/svg+xml' });
+            const link = document.createElement('a');
+            link.download = `tmmc-pattern-${Date.now()}.svg`;
+            link.href = URL.createObjectURL(blob);
+            link.click();
+        });
+
+        // Init
+        resize();
+        window.addEventListener('resize', () => { resize(); generate(); });
+        generate();
+        draw();
+    })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Referral Tracker</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Courier New', Courier, monospace;
+      background: #fff;
+      color: #000;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 60px 20px;
+    }
+
+    h1 {
+      font-size: 1.1rem;
+      font-weight: normal;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border-bottom: 1px solid #000;
+      padding-bottom: 10px;
+      margin-bottom: 48px;
+      width: 100%;
+      max-width: 500px;
+    }
+
+    .section {
+      width: 100%;
+      max-width: 500px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 4px;
+      margin-top: 18px;
+    }
+
+    input {
+      width: 100%;
+      border: none;
+      border-bottom: 1px solid #000;
+      padding: 6px 0;
+      font-family: inherit;
+      font-size: 0.95rem;
+      background: transparent;
+      outline: none;
+    }
+
+    input:focus { border-bottom: 1px solid #000; }
+
+    button {
+      margin-top: 28px;
+      background: #000;
+      color: #fff;
+      border: none;
+      padding: 10px 24px;
+      font-family: inherit;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+    }
+
+    button:hover { background: #333; }
+    button.secondary {
+      background: #fff;
+      color: #000;
+      border: 1px solid #000;
+      margin-top: 12px;
+    }
+    button.secondary:hover { background: #f0f0f0; }
+
+    .error {
+      margin-top: 14px;
+      font-size: 0.8rem;
+      color: #000;
+      border-left: 2px solid #000;
+      padding-left: 10px;
+    }
+
+    /* Results */
+    #results { margin-top: 48px; width: 100%; max-width: 500px; }
+
+    .divider {
+      border: none;
+      border-top: 1px solid #000;
+      margin: 24px 0;
+    }
+
+    .stat-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: #555;
+    }
+
+    .stat-value {
+      font-size: 1.5rem;
+      margin-top: 4px;
+    }
+
+    .referral-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 10px 0;
+      border-bottom: 1px solid #e0e0e0;
+      font-size: 0.9rem;
+    }
+
+    .referral-row:last-child { border-bottom: none; }
+
+    .referral-amount {
+      font-size: 0.8rem;
+      color: #555;
+    }
+
+    /* Modal */
+    #modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(255,255,255,0.95);
+      justify-content: center;
+      align-items: flex-start;
+      padding: 60px 20px;
+      overflow-y: auto;
+    }
+
+    #modal-overlay.open { display: flex; }
+
+    #modal {
+      background: #fff;
+      border: 1px solid #000;
+      padding: 32px;
+      width: 100%;
+      max-width: 460px;
+    }
+
+    #modal h2 {
+      font-size: 0.85rem;
+      font-weight: normal;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      border-bottom: 1px solid #000;
+      padding-bottom: 10px;
+      margin-bottom: 4px;
+    }
+
+    .success-msg {
+      font-size: 0.85rem;
+      margin-top: 20px;
+      padding: 12px;
+      border: 1px solid #000;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Referral Tracking</h1>
+
+<div class="section" id="lookup-form">
+  <label for="company">Company Name</label>
+  <input type="text" id="company" placeholder="Acme Corp" autocomplete="organization" />
+
+  <label for="firstName">First Name</label>
+  <input type="text" id="firstName" placeholder="Jane" autocomplete="given-name" />
+
+  <label for="lastName">Last Name</label>
+  <input type="text" id="lastName" placeholder="Smith" autocomplete="family-name" />
+
+  <label for="email">Email</label>
+  <input type="email" id="email" placeholder="jane@acme.com" autocomplete="email" />
+
+  <button id="lookupBtn">Look Up Referrals</button>
+  <div id="lookup-error" class="error" style="display:none;"></div>
+</div>
+
+<div id="results" style="display:none;">
+  <hr class="divider" />
+
+  <div class="stat-label">Total Referrals</div>
+  <div class="stat-value" id="ref-count">0</div>
+
+  <hr class="divider" />
+
+  <div class="stat-label" style="margin-bottom:12px;">Referral Breakdown</div>
+  <div id="ref-list"></div>
+
+  <hr class="divider" />
+
+  <div class="stat-label">Total Claimable</div>
+  <div class="stat-value" id="ref-total">$0</div>
+
+  <br/>
+  <button id="claimBtn">Claim Referral</button>
+</div>
+
+<!-- Modal -->
+<div id="modal-overlay">
+  <div id="modal">
+    <h2>Payment Details</h2>
+
+    <div id="claim-form">
+      <label for="bankName">Bank Name</label>
+      <input type="text" id="bankName" placeholder="First National Bank" />
+
+      <label for="accountName">Account Holder Name</label>
+      <input type="text" id="accountName" placeholder="Jane Smith" />
+
+      <label for="routingNum">Routing Number</label>
+      <input type="text" id="routingNum" placeholder="021000021" maxlength="9" />
+
+      <label for="accountNum">Account Number</label>
+      <input type="text" id="accountNum" placeholder="000123456789" />
+
+      <label for="accountType">Account Type</label>
+      <input type="text" id="accountType" placeholder="Checking / Savings" />
+
+      <label for="swiftCode">SWIFT / BIC (international, optional)</label>
+      <input type="text" id="swiftCode" placeholder="FNBAUS33" />
+
+      <button id="submitClaimBtn">Submit Claim</button>
+      <button class="secondary" id="cancelClaimBtn">Cancel</button>
+      <div id="claim-error" class="error" style="display:none;"></div>
+    </div>
+
+    <div id="claim-success" class="success-msg" style="display:none;">
+      Claim submitted. We will process your wire transfer shortly.
+    </div>
+  </div>
+</div>
+
+<script>
+  let clientData = {};
+
+  document.getElementById('lookupBtn').addEventListener('click', async () => {
+    const company = document.getElementById('company').value.trim();
+    const firstName = document.getElementById('firstName').value.trim();
+    const lastName = document.getElementById('lastName').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const errEl = document.getElementById('lookup-error');
+
+    errEl.style.display = 'none';
+
+    if (!company || !firstName || !lastName || !email) {
+      errEl.textContent = 'Please fill in all fields.';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/lookup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ company, firstName, lastName, email }),
+      });
+      const data = await res.json();
+
+      if (!data.found || data.referrals.length === 0) {
+        errEl.textContent = 'No referrals found for this name. If you believe this is an error, please contact us.';
+        errEl.style.display = 'block';
+        document.getElementById('results').style.display = 'none';
+        return;
+      }
+
+      clientData = { company, firstName, lastName, email };
+
+      document.getElementById('ref-count').textContent = data.referrals.length;
+      document.getElementById('ref-total').textContent = '$' + data.totalOwed.toFixed(2);
+
+      const list = document.getElementById('ref-list');
+      list.innerHTML = '';
+      data.referrals.forEach(r => {
+        const row = document.createElement('div');
+        row.className = 'referral-row';
+        row.innerHTML = `<span>${r.refereeName}</span><span class="referral-amount">$${parseFloat(r.amountOwed).toFixed(2)}</span>`;
+        list.appendChild(row);
+      });
+
+      document.getElementById('results').style.display = 'block';
+    } catch (e) {
+      errEl.textContent = 'Something went wrong. Please try again.';
+      errEl.style.display = 'block';
+    }
+  });
+
+  document.getElementById('claimBtn').addEventListener('click', () => {
+    document.getElementById('claim-form').style.display = 'block';
+    document.getElementById('claim-success').style.display = 'none';
+    document.getElementById('claim-error').style.display = 'none';
+    document.getElementById('modal-overlay').classList.add('open');
+  });
+
+  document.getElementById('cancelClaimBtn').addEventListener('click', () => {
+    document.getElementById('modal-overlay').classList.remove('open');
+  });
+
+  document.getElementById('submitClaimBtn').addEventListener('click', async () => {
+    const wireInfo = {
+      bankName: document.getElementById('bankName').value.trim(),
+      accountHolderName: document.getElementById('accountName').value.trim(),
+      routingNumber: document.getElementById('routingNum').value.trim(),
+      accountNumber: document.getElementById('accountNum').value.trim(),
+      accountType: document.getElementById('accountType').value.trim(),
+      swiftCode: document.getElementById('swiftCode').value.trim(),
+    };
+
+    const errEl = document.getElementById('claim-error');
+    errEl.style.display = 'none';
+
+    if (!wireInfo.bankName || !wireInfo.accountHolderName || !wireInfo.routingNumber || !wireInfo.accountNumber) {
+      errEl.textContent = 'Please fill in bank name, account holder, routing number, and account number.';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    try {
+      await fetch('/api/claim', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...clientData, wireInfo }),
+      });
+      document.getElementById('claim-form').style.display = 'none';
+      document.getElementById('claim-success').style.display = 'block';
+    } catch (e) {
+      errEl.textContent = 'Submission failed. Please try again.';
+      errEl.style.display = 'block';
+    }
+  });
+</script>
+</body>
+</html>

@@ -57,6 +57,12 @@ A wrong answer resets the whole streak with a fresh set of problems.
 
 ### Notes and limits
 
+- While the quiz is on screen the app plays its own siren and vibration
+  (`ChallengeSiren`). AlarmKit silences the system alarm the moment its alert
+  button is tapped, so without this the challenge would be silent. The siren
+  uses the `.playback` audio category, so it ignores the ring/silent switch,
+  and the `audio` background mode keeps it running if the app is backgrounded.
+  Its volume follows the media volume, not the alarm volume.
 - Only Apple's own Clock app is completely un-killable. If you force-quit Math
   Alarm from the app switcher *while the challenge is on screen*, the app is no
   longer running to re-arm the alarm. Every other escape route — dismissing the

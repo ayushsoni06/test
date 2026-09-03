@@ -5,9 +5,15 @@ struct QuizView: View {
     @Environment(AlarmStore.self) private var store
     let alarm: AlarmItem
 
+    private enum Feedback {
+        case correct
+        case wrong
+    }
+
     @State private var problems: [MathProblem] = []
     @State private var index = 0
     @State private var entry = ""
+    @State private var feedback: Feedback?
     @State private var shake = false
 
     var body: some View {
@@ -20,13 +26,18 @@ struct QuizView: View {
                 onDigit: append,
                 onDelete: deleteLast,
                 onSubmit: submit,
-                submitEnabled: !entry.isEmpty
+                submitEnabled: !entry.isEmpty && feedback == nil
             )
         }
         .padding(.horizontal, 20)
         .padding(.bottom, 12)
         .background(Color(.systemBackground))
-        .onAppear(perform: reset)
+        .overlay { feedbackOverlay }
+        .onAppear {
+            reset()
+            ChallengeSiren.shared.start()
+        }
+        .onDisappear { ChallengeSiren.shared.stop() }
     }
 
     private var header: some View {
@@ -60,20 +71,58 @@ struct QuizView: View {
             Text(entry.isEmpty ? "–" : entry)
                 .font(.system(size: 40, weight: .semibold, design: .rounded))
                 .monospacedDigit()
-                .foregroundStyle(entry.isEmpty ? Color.secondary : Color.orange)
+                .foregroundStyle(entryColor)
                 .frame(maxWidth: .infinity, minHeight: 68)
-                .background(Color(.secondarySystemBackground))
+                .background(entryBackground)
                 .clipShape(RoundedRectangle(cornerRadius: 16))
                 .offset(x: shake ? 10 : 0)
                 .animation(.default.repeatCount(3, autoreverses: true).speed(6), value: shake)
+                .animation(.snappy, value: feedback)
         }
         .padding(.vertical, 24)
+    }
+
+    private var entryColor: Color {
+        switch feedback {
+        case .correct: .green
+        case .wrong: .red
+        case nil: entry.isEmpty ? .secondary : .orange
+        }
+    }
+
+    private var entryBackground: Color {
+        switch feedback {
+        case .correct: Color.green.opacity(0.15)
+        case .wrong: Color.red.opacity(0.15)
+        case nil: Color(.secondarySystemBackground)
+        }
+    }
+
+    @ViewBuilder
+    private var feedbackOverlay: some View {
+        if let feedback {
+            VStack(spacing: 14) {
+                Image(systemName: feedback == .correct ? "checkmark.circle.fill" : "xmark.circle.fill")
+                    .font(.system(size: 96))
+                    .foregroundStyle(feedback == .correct ? .green : .red)
+                    .symbolEffect(.bounce, value: feedback)
+
+                if feedback == .wrong {
+                    Text("Starting over")
+                        .font(.headline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(36)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 28))
+            .transition(.scale(scale: 0.7).combined(with: .opacity))
+        }
     }
 
     // MARK: - Input
 
     private func append(_ digit: String) {
-        guard entry.count < 6 else { return }
+        guard feedback == nil, entry.count < 6 else { return }
         if digit == "-" {
             guard entry.isEmpty else { return }
             entry = "-"
@@ -83,26 +132,39 @@ struct QuizView: View {
     }
 
     private func deleteLast() {
-        guard !entry.isEmpty else { return }
+        guard feedback == nil, !entry.isEmpty else { return }
         entry.removeLast()
     }
 
     private func submit() {
-        guard problems.indices.contains(index), let value = Int(entry) else { return }
+        guard feedback == nil, problems.indices.contains(index), let value = Int(entry) else { return }
+        let isCorrect = value == problems[index].answer
 
-        if value == problems[index].answer {
+        withAnimation(.snappy) {
+            feedback = isCorrect ? .correct : .wrong
+        }
+
+        if isCorrect {
             UINotificationFeedbackGenerator().notificationOccurred(.success)
-            entry = ""
-            index += 1
-            if index >= problems.count {
-                store.completeChallenge()
-            }
         } else {
             // A wrong answer costs the whole streak — no half-asleep guessing.
             UINotificationFeedbackGenerator().notificationOccurred(.error)
             shake.toggle()
+        }
+
+        Task {
+            try? await Task.sleep(for: .milliseconds(isCorrect ? 550 : 1100))
+            withAnimation(.snappy) { feedback = nil }
             entry = ""
-            reset()
+
+            if isCorrect {
+                index += 1
+                if index >= problems.count {
+                    store.completeChallenge()
+                }
+            } else {
+                reset()
+            }
         }
     }
 

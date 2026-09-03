@@ -214,6 +214,7 @@ final class AlarmStore {
         guard let alarm = activeChallenge else { return }
         challengeSatisfied = true
         activeChallenge = nil
+        ChallengeSiren.shared.stop()
         try? AlarmManager.shared.stop(id: alarm.id)
         transientAlarms[alarm.id] = nil
     }

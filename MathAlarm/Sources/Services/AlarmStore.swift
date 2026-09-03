@@ -111,7 +111,7 @@ final class AlarmStore {
         let schedule = Alarm.Schedule.relative(.init(time: time, repeats: recurrence))
 
         do {
-            try await AlarmManager.shared.schedule(
+            _ = try await AlarmManager.shared.schedule(
                 id: alarm.id,
                 configuration: configuration(for: alarm, schedule: schedule)
             )
@@ -173,7 +173,7 @@ final class AlarmStore {
         )
         let schedule = Alarm.Schedule.fixed(Date().addingTimeInterval(seconds))
         do {
-            try await AlarmManager.shared.schedule(
+            _ = try await AlarmManager.shared.schedule(
                 id: probe.id,
                 configuration: configuration(for: probe, schedule: schedule)
             )
@@ -242,7 +242,7 @@ final class AlarmStore {
         replacement.id = UUID()
         let schedule = Alarm.Schedule.fixed(Date().addingTimeInterval(2))
         do {
-            try await AlarmManager.shared.schedule(
+            _ = try await AlarmManager.shared.schedule(
                 id: replacement.id,
                 configuration: configuration(for: replacement, schedule: schedule)
             )

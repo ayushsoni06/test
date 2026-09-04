@@ -25,8 +25,17 @@ final class AlarmStore {
     private(set) var alarms: [AlarmItem] = []
     private(set) var authorization: AlarmManager.AuthorizationState = .notDetermined
 
-    /// The alarm currently being challenged, if any. Drives the full-screen quiz.
+    /// The challenge in flight, if any. Drives the full-screen quiz.
+    ///
+    /// Its identity is deliberately stable for the whole challenge: the quiz is
+    /// keyed to it, so changing it would tear the view down and wipe the user's
+    /// progress. The AlarmKit alarm actually ringing is tracked separately by
+    /// `backingAlarmID`, which does change on every re-arm.
     private(set) var activeChallenge: AlarmItem?
+    /// The AlarmKit alarm currently ringing (or armed) behind `activeChallenge`.
+    private var backingAlarmID: UUID?
+    /// When the last re-arm was issued, so the watchdog cannot spin.
+    private var lastRearmAt: Date?
     /// Set the moment the user answers the last problem correctly, so the
     /// watchdog does not treat the resulting silence as an escape.
     private var challengeSatisfied = false
@@ -193,12 +202,19 @@ final class AlarmStore {
 
     // MARK: - Challenge
 
-    /// Called by the alert's Stop button. Opens the app on the quiz instead of
-    /// silencing anything — the alarm keeps ringing until the quiz is solved.
+    /// Called by the alert's Stop button. AlarmKit silences its own alarm at
+    /// that point, so `ChallengeSiren` takes over the noise while the quiz runs
+    /// and the watchdog below re-arms the alarm if the quiz is abandoned.
     func beginChallenge(alarmID: String) {
         guard let uuid = UUID(uuidString: alarmID), let alarm = alarm(for: uuid) else { return }
         challengeSatisfied = false
-        activeChallenge = alarm
+        backingAlarmID = uuid
+        lastRearmAt = nil
+        // If a quiz is already up, only the backing alarm changed. Leave the
+        // challenge itself alone so the questions and progress survive.
+        if activeChallenge == nil {
+            activeChallenge = alarm
+        }
     }
 
     /// Re-attaches the quiz if the app is opened while an alarm is alerting
@@ -211,12 +227,16 @@ final class AlarmStore {
 
     /// The only path that actually stops the alarm.
     func completeChallenge() {
-        guard let alarm = activeChallenge else { return }
+        guard activeChallenge != nil else { return }
         challengeSatisfied = true
         activeChallenge = nil
         ChallengeSiren.shared.stop()
-        try? AlarmManager.shared.stop(id: alarm.id)
-        transientAlarms[alarm.id] = nil
+        if let backingAlarmID {
+            try? AlarmManager.shared.stop(id: backingAlarmID)
+            transientAlarms[backingAlarmID] = nil
+        }
+        backingAlarmID = nil
+        lastRearmAt = nil
     }
 
     /// Watches AlarmKit state. If a challenge is in flight and the alarm stops
@@ -232,14 +252,31 @@ final class AlarmStore {
 
     private func handle(_ snapshot: [Alarm]) async {
         latestSnapshot = snapshot
-        guard let challenge = activeChallenge, !challengeSatisfied else { return }
-        let stillRinging = snapshot.contains { $0.id == challenge.id && $0.state == .alerting }
-        guard !stillRinging else { return }
-        await rearm(challenge)
+        guard activeChallenge != nil, !challengeSatisfied else { return }
+        guard let backing = backingAlarmID else { return }
+
+        // Ringing: nothing to do.
+        if snapshot.contains(where: { $0.id == backing && $0.state == .alerting }) {
+            lastRearmAt = nil
+            return
+        }
+        // Armed but not yet ringing — a re-arm we already scheduled. Let it fire.
+        if snapshot.contains(where: { $0.id == backing }) { return }
+        // Belt and braces: never re-arm twice inside the same window, even if
+        // the replacement never shows up in a snapshot.
+        if let lastRearmAt, Date().timeIntervalSince(lastRearmAt) < 10 { return }
+
+        await rearm()
     }
 
-    private func rearm(_ alarm: AlarmItem) async {
-        var replacement = alarm
+    /// Schedules a fresh alarm a couple of seconds out. Note that
+    /// `activeChallenge` is left untouched, so the quiz on screen keeps its
+    /// questions and its progress.
+    private func rearm() async {
+        guard let template = activeChallenge else { return }
+        lastRearmAt = Date()
+
+        var replacement = template
         replacement.id = UUID()
         let schedule = Alarm.Schedule.fixed(Date().addingTimeInterval(2))
         do {
@@ -248,7 +285,7 @@ final class AlarmStore {
                 configuration: configuration(for: replacement, schedule: schedule)
             )
             transientAlarms[replacement.id] = replacement
-            activeChallenge = replacement
+            backingAlarmID = replacement.id
         } catch {
             print("Failed to re-arm alarm: \(error)")
         }

@@ -8,10 +8,12 @@ import SwiftUI
 struct MathAlarmMetadata: AlarmMetadata {
     let difficulty: Difficulty
     let label: String
+    let challenge: ChallengeKind
 
-    init(difficulty: Difficulty, label: String) {
+    init(difficulty: Difficulty, label: String, challenge: ChallengeKind) {
         self.difficulty = difficulty
         self.label = label
+        self.challenge = challenge
     }
 }
 
@@ -136,14 +138,18 @@ final class AlarmStore {
         let alert = AlarmPresentation.Alert(
             title: LocalizedStringResource(stringLiteral: alarm.label),
             stopButton: AlarmButton(
-                text: "Solve to Stop",
+                text: alarm.challenge.alertButtonText,
                 textColor: .white,
-                systemImageName: "function"
+                systemImageName: alarm.challenge.symbol
             )
         )
         let attributes = AlarmAttributes(
             presentation: AlarmPresentation(alert: alert),
-            metadata: MathAlarmMetadata(difficulty: alarm.difficulty, label: alarm.label),
+            metadata: MathAlarmMetadata(
+                difficulty: alarm.difficulty,
+                label: alarm.label,
+                challenge: alarm.challenge
+            ),
             tintColor: Color.orange
         )
         return AlarmManager.AlarmConfiguration(
@@ -169,7 +175,12 @@ final class AlarmStore {
 
     /// Fires an alarm a few seconds from now so the whole flow can be tested
     /// without waiting until morning.
-    func scheduleTestAlarm(difficulty: Difficulty, in seconds: TimeInterval = 10) async {
+    func scheduleTestAlarm(
+        challenge: ChallengeKind = .math,
+        difficulty: Difficulty = .easy,
+        pushupTarget: Int = 5,
+        in seconds: TimeInterval = 10
+    ) async {
         await requestAuthorizationIfNeeded()
         guard authorization == .authorized else { return }
 
@@ -178,7 +189,9 @@ final class AlarmStore {
             minute: 0,
             label: "Test Alarm",
             difficulty: difficulty,
-            isEnabled: true
+            isEnabled: true,
+            challenge: challenge,
+            pushupTarget: pushupTarget
         )
         let schedule = Alarm.Schedule.fixed(Date().addingTimeInterval(seconds))
         do {

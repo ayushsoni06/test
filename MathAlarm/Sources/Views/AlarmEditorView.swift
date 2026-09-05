@@ -28,22 +28,54 @@ struct AlarmEditorView: View {
                 }
 
                 Section("Challenge") {
-                    Picker("Difficulty", selection: $draft.difficulty) {
-                        ForEach(Difficulty.allCases) { level in
-                            Text(level.title).tag(level)
+                    Picker("Type", selection: $draft.challenge) {
+                        ForEach(ChallengeKind.allCases) { kind in
+                            Label(kind.title, systemImage: kind.symbol).tag(kind)
                         }
                     }
                     .pickerStyle(.segmented)
 
-                    HStack(alignment: .top, spacing: 10) {
-                        Image(systemName: draft.difficulty.symbol)
-                            .foregroundStyle(.orange)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(draft.difficulty.subtitle)
-                            Text("\(draft.difficulty.problemCount) problems in a row to stop the alarm.")
-                                .foregroundStyle(.secondary)
+                    switch draft.challenge {
+                    case .math:
+                        Picker("Difficulty", selection: $draft.difficulty) {
+                            ForEach(Difficulty.allCases) { level in
+                                Text(level.title).tag(level)
+                            }
                         }
-                        .font(.footnote)
+                        .pickerStyle(.segmented)
+
+                        HStack(alignment: .top, spacing: 10) {
+                            Image(systemName: draft.difficulty.symbol)
+                                .foregroundStyle(.orange)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(draft.difficulty.subtitle)
+                                Text("\(draft.difficulty.problemCount) problems in a row to stop the alarm.")
+                                    .foregroundStyle(.secondary)
+                            }
+                            .font(.footnote)
+                        }
+
+                    case .pushups:
+                        Stepper(value: $draft.pushupTarget, in: 1...30) {
+                            HStack {
+                                Text("Push-ups")
+                                Spacer()
+                                Text("\(draft.pushupTarget)")
+                                    .foregroundStyle(.secondary)
+                                    .monospacedDigit()
+                            }
+                        }
+
+                        HStack(alignment: .top, spacing: 10) {
+                            Image(systemName: "camera")
+                                .foregroundStyle(.orange)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("The front camera counts your reps.")
+                                Text("Prop the phone against something so it can see your arms.")
+                                    .foregroundStyle(.secondary)
+                            }
+                            .font(.footnote)
+                        }
                     }
                 }
 

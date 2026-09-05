@@ -1,6 +1,7 @@
 # Math Alarm
 
-An iOS alarm clock you can only turn off by solving math problems.
+An iOS alarm clock you can only turn off by solving math problems — or by
+doing push-ups in front of the camera.
 
 The alarm rings on the Lock Screen through **AlarmKit**, so it breaks through
 Silent Mode and Focus at full alarm volume. The alert's only button opens the
@@ -41,7 +42,9 @@ phone. It will ring full-screen in about ten seconds.
 | `Sources/Services/AlarmStore.swift` | Saves alarms, schedules them with AlarmKit, runs the re-arm watchdog |
 | `Sources/Intents/SolveToStopIntent.swift` | The Lock Screen button — opens the quiz instead of stopping the alarm |
 | `Sources/Model/MathProblem.swift` | Problem generation for each difficulty |
-| `Sources/Views/QuizView.swift` | Full-screen challenge with its own keypad |
+| `Sources/Views/QuizView.swift` | Full-screen math challenge with its own keypad |
+| `Sources/Services/PushupDetector.swift` | Counts reps from the front camera with Vision |
+| `Sources/Views/PushupView.swift` | Camera view, rep counter, and the way out |
 | `Sources/Views/AlarmListView.swift` | Alarm list |
 | `Sources/Views/AlarmEditorView.swift` | Time, difficulty, repeat days, label |
 
@@ -54,6 +57,23 @@ phone. It will ring full-screen in about ten seconds.
 | Hard | 5 | Two-digit multiplication, mixed operations, exact division |
 
 A wrong answer resets the whole streak with a fresh set of problems.
+
+### Push-ups
+
+Set a target between 1 and 30 reps. The front camera watches, and Vision's
+body-pose model measures the **elbow angle** — the angle at the elbow between
+the shoulder and the wrist. Below 105 degrees is down, above 150 is up, and one
+down-then-up cycle is a rep. Angles are rotation invariant, so it does not
+matter how the phone is propped or which way the camera thinks is up.
+
+Nothing is recorded and no video leaves the device; frames are analysed and
+discarded.
+
+Detection is deliberately loose — the push-ups are there to get you out of bed,
+not to grade your form. If the camera cannot see anybody for 45 seconds (a dark
+room, a bad angle, denied permission) a button appears offering the math
+challenge instead, because an alarm with no possible exit is worse than a
+skipped workout.
 
 ### Notes and limits
 

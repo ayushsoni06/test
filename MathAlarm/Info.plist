@@ -24,6 +24,8 @@
 	<true/>
 	<key>NSAlarmKitUsageDescription</key>
 	<string>Math Alarm needs permission to schedule alarms so it can wake you on the Lock Screen, even in Silent Mode or a Focus.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Math Alarm uses the front camera to count your push-ups so it knows when to stop the alarm. Video never leaves your phone.</string>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
 	<key>UIBackgroundModes</key>

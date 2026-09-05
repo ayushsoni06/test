@@ -18,8 +18,12 @@ struct AlarmListView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Menu {
-                        Button("Test Alarm in 10s", systemImage: "bolt.fill") {
-                            Task { await store.scheduleTestAlarm(difficulty: .easy) }
+                        Button("Test Math Alarm in 10s", systemImage: "function") {
+                            Task { await store.scheduleTestAlarm(challenge: .math) }
+                            showingTestConfirmation = true
+                        }
+                        Button("Test Push-Up Alarm in 10s", systemImage: "figure.strengthtraining.traditional") {
+                            Task { await store.scheduleTestAlarm(challenge: .pushups, pushupTarget: 2) }
                             showingTestConfirmation = true
                         }
                     } label: {
@@ -109,7 +113,7 @@ private struct AlarmRow: View {
                     Text("•")
                     Text(alarm.repeatSummary)
                     Text("•")
-                    Label(alarm.difficulty.title, systemImage: alarm.difficulty.symbol)
+                    Label(alarm.challengeSummary, systemImage: alarm.challenge.symbol)
                         .labelStyle(.titleAndIcon)
                 }
                 .font(.footnote)

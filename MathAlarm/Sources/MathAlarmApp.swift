@@ -14,9 +14,14 @@ struct MathAlarmApp: App {
                     get: { store.activeChallenge },
                     set: { _ in }
                 )) { alarm in
-                    QuizView(alarm: alarm)
-                        .environment(store)
-                        .interactiveDismissDisabled()
+                    Group {
+                        switch alarm.challenge {
+                        case .math: QuizView(alarm: alarm)
+                        case .pushups: PushupView(alarm: alarm)
+                        }
+                    }
+                    .environment(store)
+                    .interactiveDismissDisabled()
                 }
         }
         .onChange(of: scenePhase) { _, phase in

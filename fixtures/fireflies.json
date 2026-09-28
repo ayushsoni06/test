@@ -1,0 +1,197 @@
+{
+  "client": {
+    "company": "Fireflies",
+    "contact": "Krish Ramineni",
+    "date": "September 2026"
+  },
+  "preparedBy": "Ayush Soni",
+  "hero": {
+    "media": []
+  },
+  "slots": [
+    "grafana",
+    "sim",
+    "anthrogen",
+    "conversion"
+  ],
+  "media": {},
+  "photos": {},
+  "ideas": [],
+  "content": {
+    "phases": [
+      {
+        "id": "moodboarding",
+        "group": "Brand",
+        "title": "Moodboarding",
+        "short": "Strategy",
+        "weeks": 1,
+        "subs": [
+          {
+            "title": "Brand strategy",
+            "body": "The goal here is to craft a unique brand narrative and thesis. This phase often involves a lot of open conversation and aggregated insights. We avoid a purely statistical approach to brand strategy and like to get in the weeds through thoughtful communication, so we can put our finger on what makes you authentically you.",
+            "label": "Deliverables",
+            "items": [
+              "Brand research findings",
+              "Messaging and tone of voice"
+            ]
+          },
+          {
+            "title": "Moodboards",
+            "body": "Before we launch full steam into creative work, we develop moodboards that visually showcase the findings from brand research. They pull references from a wide range of sources that come together to form cohesive visual systems.",
+            "label": "Deliverables",
+            "items": [
+              "3–5 unique moodboards"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "explorations",
+        "group": "Brand",
+        "title": "Brand explorations",
+        "short": "Brand explorations",
+        "weeks": 1,
+        "body": [
+          "We treat each brand concept as its own separate identity and prepare a presentation that begins with a core brand idea, messaging and tone of voice. Each concept includes its own art direction, typography, visual system and design language. We typically pitch 3 core brand directions to start.",
+          "In these explorations we try a wide range of visual techniques to conceptualize each direction."
+        ],
+        "label": "Deliverables",
+        "items": [
+          "Core brand presentations",
+          "Visual explorations"
+        ]
+      },
+      {
+        "id": "iteration",
+        "group": "Brand",
+        "title": "Brand iteration and revision",
+        "short": "Iterations & revisions",
+        "weeks": 1,
+        "body": [
+          "This is where we really nail down the brand. We trim the waste, extend the brand and bring in creatives to take it to the next level. These changes are usually holistic iterations, not “make the colour more sharp”.",
+          "By the end of this stage, the brand is developed to its final form."
+        ],
+        "label": "Services",
+        "items": [
+          "Illustration",
+          "Motion design",
+          "Graphic design"
+        ]
+      },
+      {
+        "id": "logomarks",
+        "group": "Brand",
+        "title": "Logomarks",
+        "short": "Logomarks",
+        "weeks": 1,
+        "body": [
+          "We spend one full week iterating on logomark options and trying out a cohort of ideas. This stage is much more iterative, with a tighter feedback loop, since in our experience a logomark needs a lot of back and forth.",
+          "If we move faster here, we spend the extra time building out the brand kit."
+        ]
+      },
+      {
+        "id": "development",
+        "group": "Brand",
+        "title": "Brand development",
+        "short": "Brand assets",
+        "weeks": 2,
+        "body": [
+          "This is the core brand execution that typically involves building out the brand further into specific deliverables that will enable you to use this brand at scale. This process involves both producing net new creative assets and documenting + defining existing brand assets."
+        ],
+        "list": [
+          [
+            "Social media assets",
+            "Defining a collection of social media assets (posts, banners, logos, etc)"
+          ],
+          [
+            "Illustration & imagery kit",
+            "Documenting a collection of brand artefacts"
+          ],
+          [
+            "Visual system",
+            "Defining and documenting a visual language"
+          ],
+          [
+            "General brand usage",
+            "Extending usage across different branding touchpoints"
+          ],
+          [
+            "Conceptual UI",
+            "Exploring opportunities to express the brand through UI and product screens"
+          ],
+          [
+            "Custom brand tooling",
+            "Building custom tools for scaling brand artefacts"
+          ],
+          [
+            "Sub-branding",
+            "Extending the system into sub-brands for products, events and initiatives"
+          ]
+        ]
+      },
+      {
+        "id": "webdesign",
+        "group": "Website",
+        "title": "Website design",
+        "short": "Website design",
+        "weeks": 2,
+        "body": [
+          "Design and iteration of a marketing website of up to 5 pages, built on our brand guidelines and design language. We create the layouts, illustrations and diagrams, animations, iconography and any other design language assets required."
+        ]
+      },
+      {
+        "id": "webdev",
+        "group": "Website",
+        "title": "Development",
+        "short": "Website development",
+        "weeks": 1,
+        "body": [
+          "We develop the final designs in Webflow, Framer or Next.js, set up stylesheets, build any CMS collections, add a class-naming system where it applies, and make the site seamless across devices. Up to 5 pages."
+        ]
+      },
+      {
+        "id": "deck",
+        "group": "Extended assets",
+        "title": "Deck",
+        "short": "Deck",
+        "weeks": 1,
+        "body": [
+          "A custom branded deck in Figma Slides, exportable as PDF, Google Slides or PowerPoint, built on the new visual language. Up to 10 custom layouts."
+        ],
+        "label": "Deliverables",
+        "items": [
+          "Sales deck and slideware templates"
+        ]
+      },
+      {
+        "id": "merch",
+        "group": "Extended assets",
+        "title": "Merchandise",
+        "short": "Merch",
+        "weeks": 1,
+        "body": [
+          "Ideation and concept exploration for custom branded merchandise."
+        ],
+        "label": "Deliverables",
+        "items": [
+          "Merchandise concepts",
+          "Event mockups: booth, banners, signage",
+          "Internal branding",
+          "Conceptual sub-brands"
+        ]
+      },
+      {
+        "id": "video",
+        "group": "Extended assets",
+        "title": "Brand video",
+        "short": "Brand video",
+        "weeks": 3,
+        "body": [
+          "The best brands come to life with something that truly grabs attention. Here we use the brand assets to put together a unique animated launch video announcing the new brand system."
+        ]
+      }
+    ],
+    "rate": 10
+  },
+  "display": {}
+}
